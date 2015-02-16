@@ -19,7 +19,7 @@ void dfs(int v, const vector<vector<int> > &graph, vector<char> &visited) {
 }
 
 // Проверка на существование Эйлерова пути
-bool checkForEulerPath(const vector<vector<int> > &graph) {
+pair<bool, int> checkForEulerPath(const vector<vector<int> > &graph) {
     int numberOfOddVertices = 0;
     vector<int> degree(graph.size(), 0);
     for (size_t i = 0; i < graph.size(); ++i) {
@@ -35,23 +35,33 @@ bool checkForEulerPath(const vector<vector<int> > &graph) {
         }
     }
     if (numberOfOddVertices > 2) {
-        return false;
+        return make_pair(false, -1);
     }
 
+    int start = 0;
     vector<char> visited(graph.size(), 0);
     for (int i = 0; i < (int)graph.size(); ++i) {
-        if (degree[i] > 0) {
-            dfs(i, graph, visited);
-            break;
+        if (numberOfOddVertices) {
+            if (graph[i].size() > degree[i] / 2) {
+                start = i;
+                dfs(i, graph, visited);
+                break;
+            }
+        } else {
+            if (degree[i] > 0) {
+                start = i;
+                dfs(i, graph, visited);
+                break;
+            }
         }
     }
 
     for (int i = 0; i < (int)graph.size(); ++i) {
         if (graph[i].size() > 1 && !visited[i]) {
-            return false;
+            return make_pair(false, -1);
         }
     }
-    return true;
+    return make_pair(true, start);
 }
 
 // Наути эйлеров путь. Стандартный алгоритм, ссылка вверху
@@ -107,7 +117,15 @@ void parseGraph(vector<vector<int> > &graph) {
         cin >> toVertices >> toVertices;
         parseVertices(adjacencyList.back().second, toVertices);
     }
-    graph.assign(adjacencyList.size(), vector<int>());
+    int maxVertexIndex = 0;
+    for (const pair<int, vector<int> > &pivi : adjacencyList) {
+        maxVertexIndex = max(maxVertexIndex, pivi.first);
+        for (int toVertex : pivi.second) {
+            maxVertexIndex = max(maxVertexIndex, toVertex);
+        }
+    }
+
+    graph.assign(maxVertexIndex + 1, vector<int>());
     for (const pair<int, vector<int> > &pivi : adjacencyList) {
         int from = pivi.first;
         for (int to : pivi.second) {
@@ -127,14 +145,15 @@ int main() {
 
     vector<vector<int> > graph;
     parseGraph(graph);
-
-    if (!checkForEulerPath(graph)) {
+    auto pbi = checkForEulerPath(graph);
+    if (!pbi.first) {
         cout << "NO EULER PATH" << endl;
         return 0;
     }
 
+    int start = pbi.second;
     vector<int> path;
-    findEulerPath(0, graph, path);
+    findEulerPath(start, graph, path);
 
     // Вывод результата
     bool needPointer = false;
@@ -149,3 +168,4 @@ int main() {
 #endif
     return 0;
 };
+
